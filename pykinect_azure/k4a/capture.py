@@ -47,6 +47,10 @@ class Capture:
 
 		return Image(_k4a.k4a_capture_get_depth_image(self._handle))
 
+	def get_depth_image_object_real(self):
+
+		return _k4a.k4a_capture_get_depth_image(self._handle)
+
 	def get_ir_image_object(self):
 
 		return Image(_k4a.k4a_capture_get_ir_image(self._handle))
