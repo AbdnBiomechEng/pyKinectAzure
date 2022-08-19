@@ -56,9 +56,10 @@ if __name__ == "__main__":
 	bodyTracker = pykinect.start_body_tracker()
 
 	cv2.namedWindow('Depth image with skeleton',cv2.WINDOW_NORMAL)
-	runtimeseconds = 5
+	runtimeseconds = 30
 	fps = 0
-	joints = np.zeros(shape=(0, 14, 3))
+	# joints = np.zeros(shape=(0, 14, 3))
+	joints = np.zeros(shape=(0, 32, 3))
 	endTime = datetime.datetime.now() + datetime.timedelta(seconds=runtimeseconds)
 	skips = 0
 
@@ -86,6 +87,21 @@ if __name__ == "__main__":
                     'K4ABT_JOINT_CLAVICLE_RIGHT',
                     'K4ABT_JOINT_SHOULDER_RIGHT',
                     'K4ABT_JOINT_ELBOW_RIGHT',
+					'K4ABT_JOINT_HIP_LEFT',
+					'K4ABT_JOINT_KNEE_LEFT',
+					'K4ABT_JOINT_ANKLE_LEFT',
+					'K4ABT_JOINT_FOOT_LEFT',
+					'K4ABT_JOINT_HIP_RIGHT',
+					'K4ABT_JOINT_KNEE_RIGHT',
+					'K4ABT_JOINT_ANKLE_RIGHT',
+					'K4ABT_JOINT_FOOT_RIGHT',
+					'K4ABT_JOINT_HEAD',
+					'K4ABT_JOINT_NOSE',
+					'K4ABT_JOINT_EYE_LEFT',
+					'K4ABT_JOINT_EAR_LEFT',
+					'K4ABT_JOINT_EYE_RIGHT',
+					'K4ABT_JOINT_EAR_RIGHT',
+					'K4ABT_JOINT_COUNT'
 ],
 			'Data': [],
 			'Timestamps': []
@@ -116,31 +132,36 @@ if __name__ == "__main__":
 		# with open("C:/Users/bradl/Documents/GitHub/occlusion-study/calibration/testPrettyPrint1.json", "w") as write_file:
 		# 	json.dump(body_frame.json(), write_file, indent=4)
 		# 	print("json in file")
-
-		bodies = body_frame.get_bodies()[0].numpy()
-
-
-		fps = fps + 1
-		bodies = np.delete(bodies, np.s_[14:], axis=0)
-
-		bodies = np.reshape(bodies,(1,14,3))
-		joints = np.vstack((joints, bodies))
+		try:
+			bodies = body_frame.get_bodies()[0].numpy()
 
 
-		#
-		# https: // github.com / ibaiGorordo / pyKinectAzure / blob / 538111
-		# ccbe1c0c19151ed742e143bf32a0d90978 / pykinect_azure / k4abt / _k4abtTypes.py  # L25
+			fps = fps + 1
+			# bodies = np.delete(bodies, np.s_[14:], axis=0)
+			#
+			# bodies = np.reshape(bodies,(1,14,3))
 
 
-		# Combine both images
-		combined_image = cv2.addWeighted(depth_color_image, 0.6, body_image_color, 0.4, 0)
 
-		# Draw the skeletons
-		combined_image = body_frame.draw_bodies(combined_image)
+			bodies = np.reshape(bodies,(1,32,3))
+			joints = np.vstack((joints, bodies))
 
-		# Overlay body segmentation on depth image
-		cv2.imshow('Depth image with skeleton',combined_image)
 
+			#
+			# https: // github.com / ibaiGorordo / pyKinectAzure / blob / 538111
+			# ccbe1c0c19151ed742e143bf32a0d90978 / pykinect_azure / k4abt / _k4abtTypes.py  # L25
+
+
+			# Combine both images
+			combined_image = cv2.addWeighted(depth_color_image, 0.6, body_image_color, 0.4, 0)
+
+			# Draw the skeletons
+			combined_image = body_frame.draw_bodies(combined_image)
+
+			# Overlay body segmentation on depth image
+			cv2.imshow('Depth image with skeleton',combined_image)
+		except:
+			skips = skips + 1
 
 
 
@@ -173,9 +194,9 @@ if __name__ == "__main__":
 	timestamps = list(range(0, fps))
 
 	data['Timestamps'] = timestamps
-	data['DataRate'] = fps/30
-	data['CameraRate'] = fps/30
-	data['OrigDataRate'] = fps/30
+	data['DataRate'] = fps/runtimeseconds
+	data['CameraRate'] = fps/runtimeseconds
+	data['OrigDataRate'] = fps/runtimeseconds
 	data['NumFrames'] = fps
 
 	outputfile = open("C:/Users/bradl/Documents/GitHub/occlusion-study/c3d/tmp.trc", "w")
