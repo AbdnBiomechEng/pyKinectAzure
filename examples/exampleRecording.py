@@ -13,10 +13,15 @@ if __name__ == "__main__":
 	device_config = pykinect.default_configuration
 	device_config.color_resolution = pykinect.K4A_COLOR_RESOLUTION_1080P
 	device_config.depth_mode = pykinect.K4A_DEPTH_MODE_WFOV_2X2BINNED
-	#print(device_config)
+	device_config.synchronized_images_only = True
+
+	device_config.wired_sync_mode = 1
+	print(device_config)
 
 	# Start device
-	video_filename = "output.mkv"
+	# video_filename = "static.mkv"
+	video_filename = input("Please enter a filename: ")
+	video_filename = video_filename + '.mkv'
 	device = pykinect.start_device(config=device_config, record=True, record_filepath=video_filename)
 
 	cv2.namedWindow('Depth Image',cv2.WINDOW_NORMAL)
