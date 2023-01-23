@@ -219,9 +219,9 @@ if __name__ == "__main__":
 	data['NumFrames'] = fps
 
 	fname = input("Please enter a filename: ")
-	print("C:/Users/bradl/Documents/GitHub/occlusion-study/c3d/: " + fname + ".trc")
+	print("./ " + fname + ".trc")
 
-	outname = "C:/Users/bradl/Documents/GitHub/occlusion-study/c3d/"
+	outname = "./"
 	ext = ".trc"
 
 	fullname = outname + fname + ext
