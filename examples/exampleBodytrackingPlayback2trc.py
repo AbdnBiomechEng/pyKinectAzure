@@ -14,7 +14,7 @@ def writeTRC(data, file):
 	# Write header
 	file.write("PathFileType\t4\t(X/Y/Z)\toutput.trc\n")
 	file.write("DataRate\tCameraRate\tNumFrames\tNumMarkers\tUnits\tOrigDataRate\tOrigDataStartFrame\tOrigNumFrames\n")
-	file.write("%d\t%d\t%d\t%d\tmm\t%d\t%d\t%d\n" % (data["DataRate"], data["CameraRate"], data["NumFrames"],
+	file.write("%.6f\t%.6f\t%d\t%d\tmm\t%.6f\t%d\t%d\n" % (data["DataRate"], data["CameraRate"], data["NumFrames"],
 													 data["NumMarkers"], data["OrigDataRate"],
 													 data["OrigDataStartFrame"], data["OrigNumFrames"]))
 
@@ -41,7 +41,7 @@ def writeTRC(data, file):
 
 if __name__ == "__main__":
 
-	video_filename = "test.mkv"
+	video_filename = "05sagsup2pro.mkv"
 
 	# Initialize the library, if the library is not found, add the library path as argument
 	pykinect.initialize_libraries(track_body=True)
@@ -50,16 +50,19 @@ if __name__ == "__main__":
 	playback = pykinect.start_playback(video_filename)
 
 	playback_config = playback.get_record_configuration()
-	# print(playback_config)
+	print(playback_config)
 
 	playback_calibration = playback.get_calibration()
-
+	runtime = playback.get_recording_length()
+	# convert from usec to seconds
+	runtimeseconds = runtime / 1000000
+	print(f"runtime is {runtimeseconds}")
 	# Start body tracker
 	bodyTracker = pykinect.start_body_tracker(calibration=playback_calibration)
 
 	cv2.namedWindow('Depth image with skeleton',cv2.WINDOW_NORMAL)
 
-	runtimeseconds = 9
+
 	fps = 0
 	joints = np.zeros(shape=(0, 18, 3))
 	# joints = np.zeros(shape=(0, 32, 3))
@@ -78,8 +81,8 @@ if __name__ == "__main__":
 			'Labels': [
 				'K4ABT_JOINT_PELVIS',
 				'K4ABT_JOINT_SPINE_NAVEL',
-				'K4ABT_JOINT_SPINE_CHEST',
-				'K4ABT_JOINT_NECK',
+				'T8',
+				'C7',
 				'K4ABT_JOINT_CLAVICLE_LEFT',
 				'K4ABT_JOINT_SHOULDER_LEFT',
 				'K4ABT_JOINT_ELBOW_LEFT',
@@ -88,9 +91,9 @@ if __name__ == "__main__":
 				'K4ABT_JOINT_HANDTIP_LEFT',
 				'K4ABT_JOINT_THUMB_LEFT',
 				'K4ABT_JOINT_CLAVICLE_RIGHT',
-				'K4ABT_JOINT_SHOULDER_RIGHT',
-				'K4ABT_JOINT_ELBOW_RIGHT',
-				'K4ABT_JOINT_WRIST_RIGHT',
+				'GH',
+				'Elbow_Midpoint',
+				'Wrist_Midpoint',
 				'K4ABT_JOINT_HAND_RIGHT',
 				'K4ABT_JOINT_HANDTIP_RIGHT',
 				'K4ABT_JOINT_THUMB_RIGHT',
@@ -109,6 +112,40 @@ if __name__ == "__main__":
 				# 'K4ABT_JOINT_EYE_RIGHT',
 				# 'K4ABT_JOINT_EAR_RIGHT'
 			],
+			# 'Labels': [
+			# 	'K4ABT_JOINT_PELVIS',
+			# 	'K4ABT_JOINT_SPINE_NAVEL',
+			# 	'K4ABT_JOINT_SPINE_CHEST',
+			# 	'K4ABT_JOINT_NECK',
+			# 	'K4ABT_JOINT_CLAVICLE_LEFT',
+			# 	'K4ABT_JOINT_SHOULDER_LEFT',
+			# 	'K4ABT_JOINT_ELBOW_LEFT',
+			# 	'K4ABT_JOINT_WRIST_LEFT',
+			# 	'K4ABT_JOINT_HAND_LEFT',
+			# 	'K4ABT_JOINT_HANDTIP_LEFT',
+			# 	'K4ABT_JOINT_THUMB_LEFT',
+			# 	'K4ABT_JOINT_CLAVICLE_RIGHT',
+			# 	'K4ABT_JOINT_SHOULDER_RIGHT',
+			# 	'K4ABT_JOINT_ELBOW_RIGHT',
+			# 	'K4ABT_JOINT_WRIST_RIGHT',
+			# 	'K4ABT_JOINT_HAND_RIGHT',
+			# 	'K4ABT_JOINT_HANDTIP_RIGHT',
+			# 	'K4ABT_JOINT_THUMB_RIGHT',
+			# 	# 'K4ABT_JOINT_HIP_LEFT',
+			# 	# 'K4ABT_JOINT_KNEE_LEFT',
+			# 	# 'K4ABT_JOINT_ANKLE_LEFT',
+			# 	# 'K4ABT_JOINT_FOOT_LEFT',
+			# 	# 'K4ABT_JOINT_HIP_RIGHT',
+			# 	# 'K4ABT_JOINT_KNEE_RIGHT',
+			# 	# 'K4ABT_JOINT_ANKLE_RIGHT',
+			# 	# 'K4ABT_JOINT_FOOT_RIGHT',
+			# 	# 'K4ABT_JOINT_HEAD',
+			# 	# 'K4ABT_JOINT_NOSE',
+			# 	# 'K4ABT_JOINT_EYE_LEFT',
+			# 	# 'K4ABT_JOINT_EAR_LEFT',
+			# 	# 'K4ABT_JOINT_EYE_RIGHT',
+			# 	# 'K4ABT_JOINT_EAR_RIGHT'
+			# ],
 			'Data': [],
 			'Timestamps': []
 			}
@@ -134,6 +171,7 @@ if __name__ == "__main__":
 
 		try:
 			bodies = body_frame.get_bodies()[0].numpy()
+
 			# get timestamp in usec
 			fTimestamp = body_frame.get_device_timestamp_usec()
 			timestamps.append(fTimestamp)
@@ -148,6 +186,21 @@ if __name__ == "__main__":
 
 			# bodies = np.reshape(bodies,(1,32,3))
 			bodies = np.reshape(bodies, (1, 18, 3))
+			# swap axis to match kinect global coordinate system for keypoints
+			# bodies[:, :, 1:3] = -bodies[:, :, 1:3]
+			# bodies[:, :, 1:3] = np.where(bodies[:, :, 1:3] > 0, -bodies[:, :, 1:3], bodies[:, :, 1:3])
+			# # Swap Y and Z coordinates for Azure Kinect joint keypoints
+			# temp_y = bodies[:, :, 2].copy()
+			# bodies[:, :, 2] = -bodies[:, :, 1]
+			# bodies[:, :, 1] = temp_y
+
+			# # Swap Y and Z coordinates and negate Z
+			# temp_y = bodies[:, :, 1].copy()
+			# bodies[:, :, 1] = bodies[:, :, 2]
+			# bodies[:, :, 2] = temp_y
+
+
+
 			joints = np.vstack((joints, bodies))
 
 
@@ -211,6 +264,11 @@ if __name__ == "__main__":
 
 	# timestamps = list(range(0, fps))
 
+	# calcualted fps as number of frames actually recieved from
+	# body tracking not camera rate i.e. those that are returned and processed
+	print(f"num of frames is {fps}")
+	print(f"runtime seconds is {runtimeseconds}")
+	print(f"fps is {fps/runtimeseconds}")
 	data['Timestamps'] = timestamps
 	data['DataRate'] = fps / runtimeseconds
 	data['CameraRate'] = fps / runtimeseconds
